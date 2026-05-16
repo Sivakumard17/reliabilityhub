@@ -1,0 +1,11 @@
+DROP TRIGGER IF EXISTS set_updated_at_slos      ON slos;
+DROP TRIGGER IF EXISTS set_updated_at_incidents ON incidents;
+DROP TRIGGER IF EXISTS set_updated_at_clusters  ON clusters;
+DROP FUNCTION IF EXISTS update_updated_at();
+DROP TABLE IF EXISTS audit_logs           CASCADE;
+DROP TABLE IF EXISTS remediation_policies CASCADE;
+DROP TABLE IF EXISTS slo_snapshots        CASCADE;
+DROP TABLE IF EXISTS slos                 CASCADE;
+DROP TABLE IF EXISTS incidents            CASCADE;
+DROP TABLE IF EXISTS clusters             CASCADE;
+DROP EXTENSION IF EXISTS "uuid-ossp";

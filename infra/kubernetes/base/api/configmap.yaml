@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reliabilityhub-api-config
+  namespace: reliabilityhub-system
+data:
+  RH_PORT: "9090"
+  RH_ENV: "production"
+  RH_SHUTDOWN_TIMEOUT: "30s"
+  RH_DB_HOST: "postgres"
+  RH_DB_PORT: "5432"
+  RH_DB_NAME: "reliabilityhub"
+  RH_DB_SSL_MODE: "disable"
+  RH_DB_MAX_OPEN_CONNS: "25"
+  RH_DB_MAX_IDLE_CONNS: "5"
+  RH_DB_CONN_MAX_LIFETIME: "5m"

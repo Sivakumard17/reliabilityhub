@@ -1,0 +1,11 @@
+apps/api/bin/
+apps/api/*.out
+apps/web/node_modules/
+apps/web/.next/
+apps/web/.env.local
+infra/terraform/**/.terraform/
+infra/terraform/**/*.tfstate
+*.log
+.DS_Store
+.env
+go.sum

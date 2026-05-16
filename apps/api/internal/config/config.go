@@ -9,9 +9,10 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
+	Server     ServerConfig
+	Database   DatabaseConfig
+	Redis      RedisConfig
+	Prometheus PrometheusConfig
 }
 
 type ServerConfig struct {
@@ -45,13 +46,18 @@ type RedisConfig struct {
 	DB       int
 }
 
+type PrometheusConfig struct {
+	URL     string
+	Enabled bool
+}
+
 func Load() (*Config, error) {
 	v := viper.New()
 	v.SetEnvPrefix("RH")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
-	v.SetDefault("PORT", 8080)
+	v.SetDefault("PORT", 9090)
 	v.SetDefault("ENV", "development")
 	v.SetDefault("SHUTDOWN_TIMEOUT", "30s")
 	v.SetDefault("DB_HOST", "localhost")
@@ -64,8 +70,10 @@ func Load() (*Config, error) {
 	v.SetDefault("DB_MAX_IDLE_CONNS", 5)
 	v.SetDefault("DB_CONN_MAX_LIFETIME", "5m")
 	v.SetDefault("REDIS_ADDR", "localhost:6379")
+	v.SetDefault("PROMETHEUS_URL", "http://prometheus-prometheus.observability.svc.cluster.local:9090")
+	v.SetDefault("PROMETHEUS_ENABLED", true)
 
-	cfg := &Config{
+	return &Config{
 		Server: ServerConfig{
 			Port:            v.GetInt("PORT"),
 			Environment:     v.GetString("ENV"),
@@ -87,8 +95,11 @@ func Load() (*Config, error) {
 			Password: v.GetString("REDIS_PASSWORD"),
 			DB:       v.GetInt("REDIS_DB"),
 		},
-	}
-	return cfg, nil
+		Prometheus: PrometheusConfig{
+			URL:     v.GetString("PROMETHEUS_URL"),
+			Enabled: v.GetBool("PROMETHEUS_ENABLED"),
+		},
+	}, nil
 }
 
 func (c *Config) IsProd() bool {

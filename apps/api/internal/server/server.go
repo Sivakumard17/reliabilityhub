@@ -68,16 +68,27 @@ func (s *Server) setupRoutes() {
 	s.router.GET("/readyz", handler.Readyz(s.log))
 	s.router.GET("/metrics", handler.Metrics())
 
+	v1 := s.router.Group("/api/v1")
+
+	// Incidents
 	incidentRepo    := repository.NewIncidentRepository(s.db)
 	incidentSvc     := service.NewIncidentService(incidentRepo, s.log)
 	incidentHandler := handler.NewIncidentHandler(incidentSvc, s.log)
 
-	v1 := s.router.Group("/api/v1")
 	inc := v1.Group("/incidents")
 	inc.POST("",             incidentHandler.Create)
 	inc.GET("",              incidentHandler.List)
 	inc.GET("/:id",          incidentHandler.GetByID)
 	inc.PATCH("/:id/status", incidentHandler.UpdateStatus)
+
+	// SLOs
+	sloRepo    := repository.NewSLORepository(s.db)
+	sloHandler := handler.NewSLOHandler(sloRepo, s.log)
+
+	slos := v1.Group("/slos")
+	slos.POST("",    sloHandler.Create)
+	slos.GET("",     sloHandler.List)
+	slos.GET("/:id", sloHandler.GetByID)
 }
 
 func (s *Server) Start() error {

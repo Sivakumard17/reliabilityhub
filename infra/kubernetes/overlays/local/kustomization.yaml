@@ -19,3 +19,6 @@ patches:
     target:
       kind: Deployment
       name: reliabilityhub-web
+images:
+  - name: localhost:5001/reliabilityhub-api
+    newTag: v0.4.0

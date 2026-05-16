@@ -1,0 +1,38 @@
+# ServiceAccount for the API pod
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: reliabilityhub-api
+  namespace: reliabilityhub-system
+---
+# Role: what the API is allowed to do
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: reliabilityhub-api-remediation
+  namespace: reliabilityhub-system
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch", "update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+---
+# Bind the role to the service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: reliabilityhub-api-remediation
+  namespace: reliabilityhub-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: reliabilityhub-api-remediation
+subjects:
+  - kind: ServiceAccount
+    name: reliabilityhub-api
+    namespace: reliabilityhub-system

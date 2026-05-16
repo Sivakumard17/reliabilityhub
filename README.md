@@ -393,3 +393,37 @@ MIT License — see [LICENSE](LICENSE) for details.
 ---
 
 *Built with ❤️ as a portfolio-grade SRE platform demonstrating production engineering practices.*
+
+---
+
+## Screenshots
+
+### Dashboard — Live metrics from Kubernetes cluster
+![Dashboard](docs/screenshots/01-dashboard.png)
+
+### Incident Management — Auto-created from AlertManager
+![Incidents](docs/screenshots/02-incidents.png)
+
+### SLO Dashboard — Error budget tracking (Google SRE model)
+![SLOs](docs/screenshots/03-slos.png)
+
+### Grafana — Kubernetes namespace resource monitoring
+![Grafana K8s](docs/screenshots/04-grafana-k8s.png)
+
+### Grafana — Connected data sources (Prometheus + AlertManager)
+![Grafana Datasources](docs/screenshots/05-grafana-datasources.png)
+
+### Argo CD — GitOps sync status (Healthy + Synced)
+![ArgoCD App](docs/screenshots/06-argocd-app.png)
+
+### Argo CD — Resource tree (deployments, services, configmaps)
+![ArgoCD Detail](docs/screenshots/07-argocd-detail.png)
+
+### Prometheus — Metrics UI
+![Prometheus](docs/screenshots/08a-promotheus.png)
+
+### Prometheus — PromQL query showing running replicas
+![Prometheus Query](docs/screenshots/09-prometheus-query.png)
+
+### Kubernetes — All pods running in cluster
+![Cluster Pods](docs/screenshots/10-cluster-pods.png)

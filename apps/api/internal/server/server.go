@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,8 @@ import (
 
 	"reliabilityhub.dev/api/internal/config"
 	"reliabilityhub.dev/api/internal/handler"
+	"reliabilityhub.dev/api/internal/k8sclient"
+	"reliabilityhub.dev/api/internal/remediation"
 	"reliabilityhub.dev/api/internal/repository"
 	"reliabilityhub.dev/api/internal/service"
 	custommiddleware "reliabilityhub.dev/api/pkg/middleware"
@@ -60,29 +63,63 @@ func (s *Server) setupRoutes() {
 	s.router.GET("/readyz", handler.Readyz(s.log))
 	s.router.GET("/metrics", handler.Metrics())
 
-	incidentRepo    := repository.NewIncidentRepository(s.db)
-	incidentSvc     := service.NewIncidentService(incidentRepo, s.log)
-	incidentHandler := handler.NewIncidentHandler(incidentSvc, s.log)
-	webhookHandler  := handler.NewWebhookHandler(incidentSvc, s.log)
-	sloRepo         := repository.NewSLORepository(s.db)
-	sloHandler      := handler.NewSLOHandler(sloRepo, s.log)
+	// ── Repositories ──────────────────────────────────────────────────
+	incidentRepo := repository.NewIncidentRepository(s.db)
+	sloRepo      := repository.NewSLORepository(s.db)
+
+	// ── Services ──────────────────────────────────────────────────────
+	incidentSvc := service.NewIncidentService(incidentRepo, s.log)
+
+	// ── Kubernetes client (optional — graceful degradation) ───────────
+	kubeconfigPath := os.Getenv("KUBECONFIG")
+	k8sClient, err := k8sclient.New(kubeconfigPath, s.log)
+	if err != nil {
+		s.log.Warn("kubernetes client unavailable — remediation disabled",
+			zap.Error(err),
+		)
+		k8sClient = nil
+	}
+
+	// ── Remediation engine ────────────────────────────────────────────
+	var remediationEngine *remediation.Engine
+	if k8sClient != nil {
+		remediationEngine = remediation.NewEngine(k8sClient, s.log)
+	}
+
+	// ── Handlers ──────────────────────────────────────────────────────
+	incidentHandler    := handler.NewIncidentHandler(incidentSvc, s.log)
+	webhookHandler     := handler.NewWebhookHandler(incidentSvc, s.log, remediationEngine)
+	sloHandler         := handler.NewSLOHandler(sloRepo, s.log)
 
 	v1 := s.router.Group("/api/v1")
 
+	// Incidents
 	inc := v1.Group("/incidents")
 	inc.POST("",             incidentHandler.Create)
 	inc.GET("",              incidentHandler.List)
 	inc.GET("/:id",          incidentHandler.GetByID)
 	inc.PATCH("/:id/status", incidentHandler.UpdateStatus)
 
+	// SLOs
 	slos := v1.Group("/slos")
 	slos.POST("",    sloHandler.Create)
 	slos.GET("",     sloHandler.List)
 	slos.GET("/:id", sloHandler.GetByID)
 
+	// Webhooks
 	webhooks := v1.Group("/webhooks")
 	webhooks.POST("/alertmanager", webhookHandler.AlertManager)
 	webhooks.POST("/generic",      webhookHandler.Generic)
+
+	// Remediation
+	if remediationEngine != nil {
+		remHandler := handler.NewRemediationHandler(
+			remediationEngine, incidentRepo, s.log,
+		)
+		rem := v1.Group("/remediation")
+		rem.GET("/policies",          remHandler.Policies)
+		rem.POST("/trigger/:incident_id", remHandler.Trigger)
+	}
 }
 
 func (s *Server) Start() error {

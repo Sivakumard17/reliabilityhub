@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -51,25 +50,16 @@ func (s *Server) setupMiddleware() {
 		s.log.Error("panic recovered", zap.Any("error", err))
 		c.AbortWithStatus(http.StatusInternalServerError)
 	}))
+	s.router.Use(custommiddleware.AllowAllCORS())
 	s.router.Use(custommiddleware.RequestLogger(s.log))
 	s.router.Use(custommiddleware.RequestID())
-	s.router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:3001"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"X-Request-ID"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
 }
 
 func (s *Server) setupRoutes() {
-	// ── System ────────────────────────────────────────────────────────
 	s.router.GET("/healthz", handler.Healthz(s.log))
 	s.router.GET("/readyz", handler.Readyz(s.log))
 	s.router.GET("/metrics", handler.Metrics())
 
-	// ── Dependencies ──────────────────────────────────────────────────
 	incidentRepo    := repository.NewIncidentRepository(s.db)
 	incidentSvc     := service.NewIncidentService(incidentRepo, s.log)
 	incidentHandler := handler.NewIncidentHandler(incidentSvc, s.log)
@@ -79,22 +69,17 @@ func (s *Server) setupRoutes() {
 
 	v1 := s.router.Group("/api/v1")
 
-	// ── Incidents ─────────────────────────────────────────────────────
 	inc := v1.Group("/incidents")
 	inc.POST("",             incidentHandler.Create)
 	inc.GET("",              incidentHandler.List)
 	inc.GET("/:id",          incidentHandler.GetByID)
 	inc.PATCH("/:id/status", incidentHandler.UpdateStatus)
 
-	// ── SLOs ──────────────────────────────────────────────────────────
 	slos := v1.Group("/slos")
 	slos.POST("",    sloHandler.Create)
 	slos.GET("",     sloHandler.List)
 	slos.GET("/:id", sloHandler.GetByID)
 
-	// ── Webhooks ──────────────────────────────────────────────────────
-	// No auth on webhook endpoints — AlertManager doesn't support it
-	// In production: use network policies to restrict access
 	webhooks := v1.Group("/webhooks")
 	webhooks.POST("/alertmanager", webhookHandler.AlertManager)
 	webhooks.POST("/generic",      webhookHandler.Generic)

@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: reliabilityhub-slo-alerts
+  namespace: observability
+  labels:
+    release: prometheus-stack
+spec:
+  groups:
+    - name: reliabilityhub.slo
+      interval: 30s
+      rules:
+        - alert: APIPodsDown
+          expr: |
+            kube_deployment_status_replicas_available{
+              namespace="reliabilityhub-system",
+              deployment="reliabilityhub-api"
+            } < 1
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No API pods available"
+            description: "All API pods are down"

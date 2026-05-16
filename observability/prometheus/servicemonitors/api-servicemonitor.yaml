@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: reliabilityhub-api
+  namespace: observability
+  labels:
+    release: prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - reliabilityhub-system
+  selector:
+    matchLabels:
+      app: reliabilityhub-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
